@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Compras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px;
+        }
+
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        form input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        form button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .total {
+            text-align: right;
+            font-size: 1.1em;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .btn-small {
+            padding: 5px 8px;
+            font-size: 0.9em;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-edit {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Lista de produtos</h1>
+        <form id="form-item">
+            <input type="text" id="nome" placeholder="Produto" required>
+            <input type="number" id="quantidade" placeholder="Qtd" min="1" required>
+            <input type="number" id="preco" placeholder="Preço unitário" min="0.01" step="0.01" required>
+            <button type="submit">Adicionar / Atualizar</button>
+            <button type="button" id="limpar-tudo" style="background:#dc3545;">Limpar Tudo</button>
+        </form>
+
+        <table id="tabela-itens">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                    <th>Preço unit</th>
+                    <th>Total item</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="total">Total geral: R$ <span id="total-geral">0.00</span></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('form-item');
+        const tabela = document.querySelector('#tabela-itens tbody');
+        const totalGeralEl = document.getElementById('total-geral');
+        const btnLimparTudo = document.getElementById('limpar-tudo');
+
+        let itens = JSON.parse(localStorage.getItem('listaComprasAvancada')) || [];
+        let editIndex = null;
+
+        function salvar() {
+            localStorage.setItem('listaComprasAvancada', JSON.stringify(itens));
+        }
+
+        function calcularTotalGeral() {
+            const total = itens.reduce((sum, it) => sum + it.quant * it.preco, 0);
+            totalGeralEl.textContent = total.toFixed(2);
+        }
+
+        function renderizar() {
+            tabela.innerHTML = '';
+            itens.forEach((it, i) => {
+                const tr = document.createElement('tr');
+                const totalItem = (it.quant * it.preco).toFixed(2);
+                tr.innerHTML = `
+          <td>${it.nome}</td>
+          <td>${it.quant}</td>
+          <td>R$ ${it.preco.toFixed(2)}</td>
+          <td>R$ ${totalItem}</td>
+          <td>
+            <button class="btn-small btn-edit" data-edit="${i}">Editar</button>
+            <button class="btn-small btn-delete" data-delete="${i}">X</button>
+          </td>`;
+                tabela.appendChild(tr);
+            });
+            calcularTotalGeral();
+            salvar();
+        }
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            const nome = form.nome.value.trim();
+            const quant = parseInt(form.quantidade.value);
+            const preco = parseFloat(form.preco.value);
+            if (!nome || quant <= 0 || preco <= 0) return;
+
+            const novo = { nome, quant, preco };
+            if (editIndex !== null) {
+                itens[editIndex] = novo;
+                editIndex = null;
+            } else {
+                itens.push(novo);
+            }
+
+            form.reset();
+            form.nome.focus();
+            renderizar();
+        });
+
+        tabela.addEventListener('click', e => {
+            if (e.target.dataset.edit !== undefined) {
+                const i = +e.target.dataset.edit;
+                const it = itens[i];
+                form.nome.value = it.nome;
+                form.quantidade.value = it.quant;
+                form.preco.value = it.preco;
+                editIndex = i;
+            }
+            if (e.target.dataset.delete !== undefined) {
+                const i = +e.target.dataset.delete;
+                itens.splice(i, 1);
+                renderizar();
+            }
+        });
+
+        btnLimparTudo.addEventListener('click', () => {
+            if (confirm('Limpar toda a lista?')) {
+                itens = [];
+                editIndex = null;
+                salvar();
+                renderizar();
+            }
+        });
+
+        renderizar();
+    </script>
+</body>
+
+</html>
