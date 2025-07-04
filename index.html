@@ -125,10 +125,12 @@
         const totalGeralEl = document.getElementById('total-geral');
         const btnLimparTudo = document.getElementById('limpar-tudo');
 
+        // [localStorage 1] Recupera dados do localStorage ao carregar a página
         let itens = JSON.parse(localStorage.getItem('listaComprasAvancada')) || [];
         let editIndex = null;
 
         function salvar() {
+            // [localStorage 2] Salva os dados atualizados no localStorage
             localStorage.setItem('listaComprasAvancada', JSON.stringify(itens));
         }
 
@@ -143,20 +145,21 @@
                 const tr = document.createElement('tr');
                 const totalItem = (it.quant * it.preco).toFixed(2);
                 tr.innerHTML = `
-          <td>${it.nome}</td>
-          <td>${it.quant}</td>
-          <td>R$ ${it.preco.toFixed(2)}</td>
-          <td>R$ ${totalItem}</td>
-          <td>
-            <button class="btn-small btn-edit" data-edit="${i}">Editar</button>
-            <button class="btn-small btn-delete" data-delete="${i}">X</button>
-          </td>`;
+                    <td>${it.nome}</td>
+                    <td>${it.quant}</td>
+                    <td>R$ ${it.preco.toFixed(2)}</td>
+                    <td>R$ ${totalItem}</td>
+                    <td>
+                        <button class="btn-small btn-edit" data-edit="${i}">Editar</button>
+                        <button class="btn-small btn-delete" data-delete="${i}">X</button>
+                    </td>`;
                 tabela.appendChild(tr);
             });
             calcularTotalGeral();
-            salvar();
+            salvar(); // [localStorage 3] Garante que a lista atual seja salva após renderização
         }
 
+        // [eventListener 1] Escuta o envio do formulário
         form.addEventListener('submit', e => {
             e.preventDefault();
             const nome = form.nome.value.trim();
@@ -177,6 +180,7 @@
             renderizar();
         });
 
+        // [eventListener 2] Escuta cliques nos botões de editar e deletar
         tabela.addEventListener('click', e => {
             if (e.target.dataset.edit !== undefined) {
                 const i = +e.target.dataset.edit;
@@ -193,11 +197,12 @@
             }
         });
 
+        // [eventListener 3] Escuta o clique no botão "Limpar Tudo"
         btnLimparTudo.addEventListener('click', () => {
             if (confirm('Limpar toda a lista?')) {
                 itens = [];
                 editIndex = null;
-                salvar();
+                salvar(); // [localStorage 4] Apaga os dados do localStorage
                 renderizar();
             }
         });
