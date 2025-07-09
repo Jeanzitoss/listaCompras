@@ -3,27 +3,41 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Lista de Compras</title>
+    <title>Lista de Compras com Conquistas</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background: #eef2f5;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
             padding: 30px;
         }
 
-        .container {
+        .layout {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .container,
+        .sidebar {
             background: #fff;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 600px;
         }
 
-        h1 {
+        .container {
+            width: 65%;
+        }
+
+        .sidebar {
+            width: 35%;
+        }
+
+        h1,
+        h2 {
             margin-bottom: 20px;
             color: #333;
         }
@@ -65,13 +79,6 @@
             text-align: center;
         }
 
-        .total {
-            text-align: right;
-            font-size: 1.1em;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-
         .btn-small {
             padding: 5px 8px;
             font-size: 0.9em;
@@ -89,125 +96,147 @@
             background: #dc3545;
             color: white;
         }
+
+        #contadorCliques {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        .resumo-texto {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .conquista {
+            background: #28a745;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: bold;
+            display: none;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Lista de Compras</h1>
-        <form id="form-item">
-            <input type="text" id="nome" placeholder="Produto" required>
-            <input type="number" id="quantidade" placeholder="Qtd" min="1" required>
-            <input type="number" id="preco" placeholder="Preço unitário" min="0.01" step="0.01" required>
-            <button type="submit">Adicionar / Atualizar</button>
-            <button type="button" id="limpar-tudo" style="background:#dc3545;">Limpar Tudo</button>
-        </form>
+    <div class="layout">
+        <!-- Lista de Compras -->
+        <div class="container">
+            <h1>Lista de Compras</h1>
+            <form id="formulario">
+                <input type="text" id="item" placeholder="Nome do item" required>
+                <input type="number" id="quantidade" placeholder="Quantidade" required>
+                <input type="number" id="preco" placeholder="Preço" required>
+                <button type="submit">Adicionar</button>
+            </form>
 
-        <table id="tabela-itens">
-            <thead>
-                <tr>
-                    <th>Produto</th>
-                    <th>Qtd</th>
-                    <th>Preço unit</th>
-                    <th>Total item</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+            <div id="contadorCliques">Botão clicado 0 vezes</div>
+            <div id="mensagemConquista" class="conquista">🏅 Parabéns! Você atingiu 10 cliques e ganhou uma conquista!
+            </div>
 
-        <div class="total">Total geral: R$ <span id="total-geral">0.00</span></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantidade</th>
+                        <th>Preço</th>
+                        <th>Clique</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-corpo"></tbody>
+            </table>
+        </div>
+
+        <!-- Resumo -->
+        <div class="sidebar">
+            <h2>Resumo</h2>
+            <p class="resumo-texto">Veja abaixo um resumo da sua lista de compras.</p>
+            <ul>
+                <li>Total de itens: <span id="totalItens">0</span></li>
+                <li>Valor total: <span id="valorTotal">R$ 0,00</span></li>
+            </ul>
+        </div>
     </div>
 
     <script>
-        const form = document.getElementById('form-item');
-        const tabela = document.querySelector('#tabela-itens tbody');
-        const totalGeralEl = document.getElementById('total-geral');
-        const btnLimparTudo = document.getElementById('limpar-tudo');
+        let contador = 0;
+        let totalItens = 0;
+        let valorTotal = 0;
+        const metaConquista = 10;
+        let conquistaMostrada = false;
 
-        // [localStorage 1] Recupera dados do localStorage ao carregar a página
-        let itens = JSON.parse(localStorage.getItem('listaComprasAvancada')) || [];
-        let editIndex = null;
+        const formulario = document.getElementById('formulario');
+        const tabela = document.getElementById('tabela-corpo');
+        const contadorEl = document.getElementById('contadorCliques');
+        const conquistaEl = document.getElementById('mensagemConquista');
+        const totalItensEl = document.getElementById('totalItens');
+        const valorTotalEl = document.getElementById('valorTotal');
 
-        function salvar() {
-            // [localStorage 2] Salva os dados atualizados no localStorage
-            localStorage.setItem('listaComprasAvancada', JSON.stringify(itens));
-        }
-
-        function calcularTotalGeral() {
-            const total = itens.reduce((sum, it) => sum + it.quant * it.preco, 0);
-            totalGeralEl.textContent = total.toFixed(2);
-        }
-
-        function renderizar() {
-            tabela.innerHTML = '';
-            itens.forEach((it, i) => {
-                const tr = document.createElement('tr');
-                const totalItem = (it.quant * it.preco).toFixed(2);
-                tr.innerHTML = `
-                    <td>${it.nome}</td>
-                    <td>${it.quant}</td>
-                    <td>R$ ${it.preco.toFixed(2)}</td>
-                    <td>R$ ${totalItem}</td>
-                    <td>
-                        <button class="btn-small btn-edit" data-edit="${i}">Editar</button>
-                        <button class="btn-small btn-delete" data-delete="${i}">X</button>
-                    </td>`;
-                tabela.appendChild(tr);
-            });
-            calcularTotalGeral();
-            salvar(); // [localStorage 3] Garante que a lista atual seja salva após renderização
-        }
-
-        // [eventListener 1] Escuta o envio do formulário
-        form.addEventListener('submit', e => {
+        formulario.addEventListener('submit', function (e) {
             e.preventDefault();
-            const nome = form.nome.value.trim();
-            const quant = parseInt(form.quantidade.value);
-            const preco = parseFloat(form.preco.value);
-            if (!nome || quant <= 0 || preco <= 0) return;
+            contador++;
 
-            const novo = { nome, quant, preco };
-            if (editIndex !== null) {
-                itens[editIndex] = novo;
-                editIndex = null;
-            } else {
-                itens.push(novo);
+            const item = document.getElementById('item').value.trim();
+            const quantidade = parseInt(document.getElementById('quantidade').value);
+            const preco = parseFloat(document.getElementById('preco').value);
+
+            if (!item || quantidade <= 0 || preco <= 0) {
+                alert("Preencha todos os campos corretamente.");
+                return;
             }
 
-            form.reset();
-            form.nome.focus();
-            renderizar();
+            contadorEl.textContent = `Botão clicado ${contador} ${contador === 1 ? 'vez' : 'vezes'}`;
+
+            if (contador >= metaConquista && !conquistaMostrada) {
+                conquistaEl.style.display = 'block';
+                conquistaMostrada = true;
+            }
+
+            const novaLinha = document.createElement('tr');
+            novaLinha.innerHTML = `
+        <td>${item}</td>
+        <td>${quantidade}</td>
+        <td>R$ ${preco.toFixed(2)}</td>
+        <td>${contador}</td>
+        <td>
+          <button class="btn-small btn-edit">Editar</button>
+          <button class="btn-small btn-delete">Remover</button>
+        </td>
+      `;
+
+            novaLinha.querySelector('.btn-delete').addEventListener('click', () => {
+                tabela.removeChild(novaLinha);
+                totalItens -= quantidade;
+                valorTotal -= preco * quantidade;
+                atualizarResumo();
+            });
+
+            novaLinha.querySelector('.btn-edit').addEventListener('click', () => {
+                document.getElementById('item').value = item;
+                document.getElementById('quantidade').value = quantidade;
+                document.getElementById('preco').value = preco;
+                tabela.removeChild(novaLinha);
+                totalItens -= quantidade;
+                valorTotal -= preco * quantidade;
+                atualizarResumo();
+            });
+
+            tabela.appendChild(novaLinha);
+
+            totalItens += quantidade;
+            valorTotal += preco * quantidade;
+            atualizarResumo();
+
+            formulario.reset();
         });
 
-        // [eventListener 2] Escuta cliques nos botões de editar e deletar
-        tabela.addEventListener('click', e => {
-            if (e.target.dataset.edit !== undefined) {
-                const i = +e.target.dataset.edit;
-                const it = itens[i];
-                form.nome.value = it.nome;
-                form.quantidade.value = it.quant;
-                form.preco.value = it.preco;
-                editIndex = i;
-            }
-            if (e.target.dataset.delete !== undefined) {
-                const i = +e.target.dataset.delete;
-                itens.splice(i, 1);
-                renderizar();
-            }
-        });
-
-        // [eventListener 3] Escuta o clique no botão "Limpar Tudo"
-        btnLimparTudo.addEventListener('click', () => {
-            if (confirm('Limpar toda a lista?')) {
-                itens = [];
-                editIndex = null;
-                salvar(); // [localStorage 4] Apaga os dados do localStorage
-                renderizar();
-            }
-        });
-
-        renderizar();
+        function atualizarResumo() {
+            totalItensEl.textContent = totalItens;
+            valorTotalEl.textContent = `R$ ${valorTotal.toFixed(2)}`;
+        }
     </script>
 </body>
 
