@@ -147,6 +147,28 @@
             border-color: #666;
         }
 
+        /* Pink mode */
+        body.pink-mode {
+            background: #ff7ef4;
+            color: #000000;
+        }
+
+        body.pink-mode .container,
+        body.pink-mode .sidebar {
+            background: #df51d1;
+            color: #000000;
+        }
+        body.pink-mode input,
+        body.pink-mode button {
+            background-color: #ff61dd;
+            color: #000000;
+            border-color: #e65151;
+        }
+
+        body.pink-mode p{
+            color: pink;
+        }
+
         /* Daltonismo */
         body.protanopia {
             filter: url('#protanopia');
@@ -167,6 +189,7 @@
         <!-- Acessibilidade -->
         <div class="acessibilidade">
             <button id="toggleDarkMode">🌙 Alternar Modo Escuro</button>
+            <button id="togglePinkMode">Alternar Modo Rosa</button>
             <div>
                 <label for="filtroDaltonismo">Acessibilidade (Daltonismo):</label>
                 <select id="filtroDaltonismo">
@@ -232,6 +255,7 @@
 
     <!-- Script -->
     <script>
+        let toggles = JSON.parse(localStorage.getItem("toggles")) || []
         let contador = 0;
         let totalItens = 0;
         let valorTotal = 0;
@@ -308,6 +332,23 @@
         // Dark mode toggle
         document.getElementById('toggleDarkMode').addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
+            if (toggles[0] == 0){
+                toggles[0] = 1
+            }else{
+                toggles[0] = 0 
+            }
+            localStorage.setItem("toggles", JSON.stringify(toggles)) 
+        });
+
+        // Dark mode toggle
+        document.getElementById('togglePinkMode').addEventListener('click', () => {
+            document.body.classList.toggle('pink-mode');
+            if (toggles[1] == 0){
+                toggles[1] = 1
+            }else{
+                toggles[1] = 0 
+            }
+            localStorage.setItem("toggles", JSON.stringify(toggles)) 
         });
 
         // Daltonismo filter
@@ -318,6 +359,14 @@
                 document.body.classList.add(valor);
             }
         });
+
+        if (toggles[0] == 1){
+            document.body.classList.toggle('dark-mode');
+        }
+        if (toggles[1] == 1){
+            document.body.classList.toggle('pink-mode');
+        }
+
     </script>
 </body>
 
